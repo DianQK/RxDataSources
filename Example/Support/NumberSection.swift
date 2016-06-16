@@ -71,7 +71,7 @@ extension IntItem
 
 // equatable, this is needed to detect changes
 func == (lhs: IntItem, rhs: IntItem) -> Bool {
-    return lhs.number == rhs.number && lhs.date.isEqualToDate(rhs.date)
+    return lhs.number == rhs.number && lhs.date.isEqual(rhs.date as Date)
 }
 
 // MARK: Some nice extensions

@@ -34,29 +34,29 @@ class ViewController: UIViewController {
 
         let initialRandomizedSections = Randomizer(rng: PseudoRandomGenerator(4, 3), sections: initialValue())
 
-        let ticks = Observable<Int>.interval(1, scheduler: MainScheduler.instance).map { _ in () }
-        let randomSections = Observable.of(ticks, refreshButton.rx_tap.asObservable())
+        let ticks = Observable<Int>.interval(period: 1, scheduler: MainScheduler.instance).map { _ in () }
+        let randomSections = Observable.of(elements: ticks, refreshButton.rx_tap.asObservable())
                 .merge()
-                .scan(initialRandomizedSections) { a, _ in
+                .scan(seed: initialRandomizedSections) { a, _ in
                     return a.randomize()
                 }
                 .map { a in
                     return a.sections
                 }
-                .shareReplay(1)
+                .shareReplay(bufferSize: 1)
         let tvAnimatedDataSource = RxTableViewSectionedAnimatedDataSource<NumberSection>()
         let reloadDataSource = RxTableViewSectionedReloadDataSource<NumberSection>()
 
-        skinTableViewDataSource(tvAnimatedDataSource)
-        skinTableViewDataSource(reloadDataSource)
+        skinTableViewDataSource(dataSource: tvAnimatedDataSource)
+        skinTableViewDataSource(dataSource: reloadDataSource)
+        
+        randomSections
+            .bindTo(binder: animatedTableView.rx_itemsWithDataSource(dataSource: tvAnimatedDataSource))
+            .addDisposableTo(bag: disposeBag)
 
         randomSections
-            .bindTo(animatedTableView.rx_itemsWithDataSource(tvAnimatedDataSource))
-            .addDisposableTo(disposeBag)
-
-        randomSections
-            .bindTo(tableView.rx_itemsWithDataSource(reloadDataSource))
-            .addDisposableTo(disposeBag)
+            .bindTo(binder: tableView.rx_itemsWithDataSource(dataSource: reloadDataSource))
+            .addDisposableTo(bag: disposeBag)
 
         // Collection view logic works, but when clicking fast because of internal bugs
         // collection view will sometimes get confused. I know what you are thinking,
@@ -71,32 +71,32 @@ class ViewController: UIViewController {
         let useAnimatedUpdates = true
         if useAnimatedUpdates {
             let cvAnimatedDataSource = RxCollectionViewSectionedAnimatedDataSource<NumberSection>()
-            skinCollectionViewDataSource(cvAnimatedDataSource)
+            skinCollectionViewDataSource(dataSource: cvAnimatedDataSource)
 
             randomSections
-                .bindTo(animatedCollectionView.rx_itemsWithDataSource(cvAnimatedDataSource))
-                .addDisposableTo(disposeBag)
+                .bindTo(binder: animatedCollectionView.rx_itemsWithDataSource(dataSource: cvAnimatedDataSource))
+                .addDisposableTo(bag: disposeBag)
         }
         else {
             let cvReloadDataSource = RxCollectionViewSectionedReloadDataSource<NumberSection>()
-            skinCollectionViewDataSource(cvReloadDataSource)
+            skinCollectionViewDataSource(dataSource: cvReloadDataSource)
             randomSections
-                .bindTo(animatedCollectionView.rx_itemsWithDataSource(cvReloadDataSource))
-                .addDisposableTo(disposeBag)
+                .bindTo(binder: animatedCollectionView.rx_itemsWithDataSource(dataSource: cvReloadDataSource))
+                .addDisposableTo(bag: disposeBag)
         }
 
         // touches
 
         Observable.of(
-            tableView.rx_modelSelected(IntItem.self),
-            animatedTableView.rx_modelSelected(IntItem.self),
-            animatedCollectionView.rx_modelSelected(IntItem.self)
+            elements: tableView.rx_modelSelected(modelType: IntItem.self),
+            animatedTableView.rx_modelSelected(modelType: IntItem.self),
+            animatedCollectionView.rx_modelSelected(modelType: IntItem.self)
         )
             .merge()
             .subscribeNext { item in
                 print("Let me guess, it's .... It's \(item), isn't it? Yeah, I've got it.")
             }
-            .addDisposableTo(disposeBag)
+            .addDisposableTo(bag: disposeBag)
     }
 }
 
@@ -105,7 +105,7 @@ extension ViewController {
 
     func skinTableViewDataSource(dataSource: RxTableViewSectionedDataSource<NumberSection>) {
         dataSource.configureCell = { (_, tv, ip, i) in
-            let cell = tv.dequeueReusableCellWithIdentifier("Cell") ?? UITableViewCell(style:.Default, reuseIdentifier: "Cell")
+            let cell = tv.dequeueReusableCell(withIdentifier: "Cell") ?? UITableViewCell(style:.default, reuseIdentifier: "Cell")
 
             cell.textLabel!.text = "\(i)"
 
@@ -113,13 +113,13 @@ extension ViewController {
         }
 
         dataSource.titleForHeaderInSection = { (ds, section) -> String? in
-            return ds.sectionAtIndex(section).header
+            return ds.sectionAtIndex(section: section).header
         }
     }
 
     func skinCollectionViewDataSource(dataSource: CollectionViewSectionedDataSource<NumberSection>) {
         dataSource.configureCell = { (_, cv, ip, i) in
-            let cell = cv.dequeueReusableCellWithReuseIdentifier("Cell", forIndexPath: ip) as! NumberCell
+            let cell = cv.dequeueReusableCell(withReuseIdentifier: "Cell", for: ip) as! NumberCell
 
             cell.value!.text = "\(i)"
 
@@ -127,9 +127,9 @@ extension ViewController {
         }
 
         dataSource.supplementaryViewFactory = { (ds ,cv, kind, ip) in
-            let section = cv.dequeueReusableSupplementaryViewOfKind(kind, withReuseIdentifier: "Section", forIndexPath: ip) as! NumberSectionView
+            let section = cv.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "Section", for: ip) as! NumberSectionView
 
-            section.value!.text = "\(ds.sectionAtIndex(ip.section).header)"
+            section.value!.text = "\(ds.sectionAtIndex(section: ip.section).header)"
             
             return section
         }
@@ -151,7 +151,7 @@ extension ViewController {
             */
 
             return (0 ..< nSections).map { (i: Int) in
-                NumberSection(header: "Section \(i + 1)", numbers: $(Array(i * nItems ..< (i + 1) * nItems)), updated: NSDate())
+                NumberSection(header: "Section \(i + 1)", numbers: $(numbers: Array(i * nItems ..< (i + 1) * nItems)), updated: NSDate())
             }
         }
         else {
@@ -163,16 +163,16 @@ extension ViewController {
 }
 
 let _initialValue: [NumberSection] = [
-    NumberSection(header: "section 1", numbers: $([1, 2, 3]), updated: NSDate()),
-    NumberSection(header: "section 2", numbers: $([4, 5, 6]), updated: NSDate()),
-    NumberSection(header: "section 3", numbers: $([7, 8, 9]), updated: NSDate()),
-    NumberSection(header: "section 4", numbers: $([10, 11, 12]), updated: NSDate()),
-    NumberSection(header: "section 5", numbers: $([13, 14, 15]), updated: NSDate()),
-    NumberSection(header: "section 6", numbers: $([16, 17, 18]), updated: NSDate()),
-    NumberSection(header: "section 7", numbers: $([19, 20, 21]), updated: NSDate()),
-    NumberSection(header: "section 8", numbers: $([22, 23, 24]), updated: NSDate()),
-    NumberSection(header: "section 9", numbers: $([25, 26, 27]), updated: NSDate()),
-    NumberSection(header: "section 10", numbers: $([28, 29, 30]), updated: NSDate())
+    NumberSection(header: "section 1", numbers: $(numbers: [1, 2, 3]), updated: NSDate()),
+    NumberSection(header: "section 2", numbers: $(numbers: [4, 5, 6]), updated: NSDate()),
+    NumberSection(header: "section 3", numbers: $(numbers: [7, 8, 9]), updated: NSDate()),
+    NumberSection(header: "section 4", numbers: $(numbers: [10, 11, 12]), updated: NSDate()),
+    NumberSection(header: "section 5", numbers: $(numbers: [13, 14, 15]), updated: NSDate()),
+    NumberSection(header: "section 6", numbers: $(numbers: [16, 17, 18]), updated: NSDate()),
+    NumberSection(header: "section 7", numbers: $(numbers: [19, 20, 21]), updated: NSDate()),
+    NumberSection(header: "section 8", numbers: $(numbers: [22, 23, 24]), updated: NSDate()),
+    NumberSection(header: "section 9", numbers: $(numbers: [25, 26, 27]), updated: NSDate()),
+    NumberSection(header: "section 10", numbers: $(numbers: [28, 29, 30]), updated: NSDate())
 ]
 
 func $(numbers: [Int]) -> [IntItem] {

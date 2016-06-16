@@ -48,12 +48,12 @@ class CustomizationUsingTableViewDelegate : UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
 
         let dataSource = RxTableViewSectionedAnimatedDataSource<MySection>()
 
         dataSource.configureCell = { ds, tv, ip, item in
-            let cell = tv.dequeueReusableCellWithIdentifier("Cell") ?? UITableViewCell(style: .Default, reuseIdentifier: "Cell")
+            let cell = tv.dequeueReusableCell(withIdentifier: "Cell") ?? UITableViewCell(style: .default, reuseIdentifier: "Cell")
             cell.textLabel?.text = "Item \(item)"
 
             return cell
@@ -75,23 +75,23 @@ class CustomizationUsingTableViewDelegate : UIViewController {
         ]
 
         Observable.just(sections)
-            .bindTo(tableView.rx_itemsWithDataSource(dataSource))
-            .addDisposableTo(disposeBag)
+            .bindTo(binder: tableView.rx_itemsWithDataSource(dataSource: dataSource))
+            .addDisposableTo(bag: disposeBag)
 
-        tableView.rx_setDelegate(self)
-            .addDisposableTo(disposeBag)
+        tableView.rx_setDelegate(delegate: self)
+            .addDisposableTo(bag: disposeBag)
 
         self.dataSource = dataSource
     }
 }
 
 extension CustomizationUsingTableViewDelegate : UITableViewDelegate {
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
+    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: IndexPath) -> CGFloat {
 
         // you can also fetch item
-        guard let item = dataSource?.itemAtIndexPath(indexPath),
+        guard let item = dataSource?.itemAt(indexPath: indexPath),
         // .. or section and customize what you like
-            _ = dataSource?.sectionAtIndex(indexPath.section)
+            _ = dataSource?.sectionAtIndex(section: indexPath.section)
             else {
             return 0.0
         }

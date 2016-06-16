@@ -26,35 +26,35 @@ public class RxTableViewSectionedAnimatedDataSource<S: AnimatableSectionModelTyp
         super.init()
     }
 
-    public func tableView(tableView: UITableView, observedEvent: Event<Element>) {
+    public func tableView(_ tableView: UITableView, observedEvent: Event<Element>) {
         UIBindingObserver(UIElement: self) { dataSource, newSections in
             #if DEBUG
                 self._dataSourceBound = true
             #endif
             if !self.dataSet {
                 self.dataSet = true
-                dataSource.setSections(newSections)
+                dataSource.setSections(sections: newSections)
                 tableView.reloadData()
             }
             else {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.asynchronously() {
                     let oldSections = dataSource.sectionModels
                     do {
-                        let differences = try differencesForSectionedView(oldSections, finalSections: newSections)
+                        let differences = try differencesForSectionedView(initialSections: oldSections, finalSections: newSections)
 
                         for difference in differences {
-                            dataSource.setSections(difference.finalSections)
+                            dataSource.setSections(sections: difference.finalSections)
 
-                            tableView.performBatchUpdates(difference, animationConfiguration: self.animationConfiguration)
+                            tableView.performBatchUpdates(changes: difference, animationConfiguration: self.animationConfiguration)
                         }
                     }
                     catch let e {
-                        rxDebugFatalError(e)
-                        self.setSections(newSections)
+                        rxDebugFatalError(error: e)
+                        self.setSections(sections: newSections)
                         tableView.reloadData()
                     }
                 }
             }
-        }.on(observedEvent)
+        }.on(event: observedEvent)
     }
 }

@@ -28,45 +28,54 @@ class EditingExampleViewController: UIViewController {
                                          NumberSection(header: "Section 3", numbers: [], updated: NSDate())]
 
         let initialState = SectionedTableViewState(sections: sections)
-        let add3ItemsAddStart = Observable.of((), (), ())
-        let addCommand = Observable.of(addButton.rx_tap.asObservable(), add3ItemsAddStart)
+        let add3ItemsAddStart = Observable.of(elements: (), (), ())
+        let addCommand = Observable.of(elements: addButton.rx_tap.asObservable(), add3ItemsAddStart)
             .merge()
-            .map(TableViewEditingCommand.addRandomItem)
+            .map(selector: TableViewEditingCommand.addRandomItem)
 
         let deleteCommand = tableView.rx_itemDeleted.asObservable()
-            .map(TableViewEditingCommand.DeleteItem)
+            .map(selector: TableViewEditingCommand.DeleteItem)
 
         let movedCommand = tableView.rx_itemMoved
-            .map(TableViewEditingCommand.MoveItem)
+            .map { (sourceIndex: IndexPath, destinationIndex: IndexPath) in
+                TableViewEditingCommand.MoveItem(sourceIndex: sourceIndex, destinationIndex: destinationIndex)
+        }
 
-        skinTableViewDataSource(dataSource)
-        Observable.of(addCommand, deleteCommand, movedCommand)
+        skinTableViewDataSource(dataSource: dataSource)
+        Observable.of(elements: addCommand, deleteCommand, movedCommand)
             .merge()
-            .scan(initialState) {
-                return $0.executeCommand($1)
-            }
-            .startWith(initialState)
-            .map {
-                $0.sections
-            }
-            .shareReplay(1)
-            .bindTo(tableView.rx_itemsWithDataSource(dataSource))
-            .addDisposableTo(disposeBag)
+        .scan(seed: initialState) { (a, c) -> SectionedTableViewState in
+            return a.executeCommand(command: c)
+        }
+            .startWith(elements: initialState)
+        .map { $0.sections }
+        .shareReplay(bufferSize: 1)
+        .bindTo(binder: tableView.rx_itemsWithDataSource(dataSource: dataSource)).addDisposableTo(bag: disposeBag)
+//            .scan(seed: initialState) {
+//                return $0.executeCommand($1)
+//            }
+//            .startWith(initialState)
+//            .map {
+//                $0.sections
+//            }
+//            .shareReplay(1)
+//            .bindTo(tableView.rx_itemsWithDataSource(dataSource))
+//            .addDisposableTo(disposeBag)
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         tableView.setEditing(true, animated: true)
     }
     
     func skinTableViewDataSource(dataSource: RxTableViewSectionedAnimatedDataSource<NumberSection>) {
         
-        dataSource.animationConfiguration = AnimationConfiguration(insertAnimation: .Top,
-                                                                   reloadAnimation: .Fade,
-                                                                   deleteAnimation: .Left)
+        dataSource.animationConfiguration = AnimationConfiguration(insertAnimation: .top,
+                                                                   reloadAnimation: .fade,
+                                                                   deleteAnimation: .left)
         
         dataSource.configureCell = { (dataSource, table, idxPath, item) in
-            let cell = table.dequeueReusableCellWithIdentifier("Cell", forIndexPath: idxPath)
+            let cell = table.dequeueReusableCell(withIdentifier: "Cell", for: idxPath)
             
             cell.textLabel?.text = "\(item)"
             
@@ -74,7 +83,7 @@ class EditingExampleViewController: UIViewController {
         }
         
         dataSource.titleForHeaderInSection = { (ds, section) -> String? in
-            return ds.sectionAtIndex(section).header
+            return ds.sectionAtIndex(section: section).header
         }
         
         dataSource.canEditRowAtIndexPath = { _ in
@@ -88,8 +97,8 @@ class EditingExampleViewController: UIViewController {
 
 enum TableViewEditingCommand {
     case AppendItem(item: IntItem, section: Int)
-    case MoveItem(sourceIndex: NSIndexPath, destinationIndex: NSIndexPath)
-    case DeleteItem(NSIndexPath)
+    case MoveItem(sourceIndex: IndexPath, destinationIndex: IndexPath)
+    case DeleteItem(IndexPath)
 }
 
 // This is the part
@@ -111,7 +120,7 @@ struct SectionedTableViewState {
         case .DeleteItem(let indexPath):
             var sections = self.sections
             var items = sections[indexPath.section].items
-            items.removeAtIndex(indexPath.row)
+            items.remove(at: indexPath.row)
             sections[indexPath.section] = NumberSection(original: sections[indexPath.section], items: items)
             return SectionedTableViewState(sections: sections)
         case .MoveItem(let moveEvent):
@@ -120,15 +129,15 @@ struct SectionedTableViewState {
             var destinationItems = sections[moveEvent.destinationIndex.section].items
             
             if moveEvent.sourceIndex.section == moveEvent.destinationIndex.section {
-                destinationItems.insert(destinationItems.removeAtIndex(moveEvent.sourceIndex.row),
-                                        atIndex: moveEvent.destinationIndex.row)
+                destinationItems.insert(destinationItems.remove(at: moveEvent.sourceIndex.row),
+                                        at: moveEvent.destinationIndex.row)
                 let destinationSection = NumberSection(original: sections[moveEvent.destinationIndex.section], items: destinationItems)
                 sections[moveEvent.sourceIndex.section] = destinationSection
                 
                 return SectionedTableViewState(sections: sections)
             } else {
-                let item = sourceItems.removeAtIndex(moveEvent.sourceIndex.row)
-                destinationItems.insert(item, atIndex: moveEvent.destinationIndex.row)
+                let item = sourceItems.remove(at: moveEvent.sourceIndex.row)
+                destinationItems.insert(item, at: moveEvent.destinationIndex.row)
                 let sourceSection = NumberSection(original: sections[moveEvent.sourceIndex.section], items: sourceItems)
                 let destinationSection = NumberSection(original: sections[moveEvent.destinationIndex.section], items: destinationItems)
                 sections[moveEvent.sourceIndex.section] = sourceSection

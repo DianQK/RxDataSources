@@ -27,35 +27,34 @@ public class RxCollectionViewSectionedAnimatedDataSource<S: AnimatableSectionMod
         super.init()
     }
     
-    public func collectionView(collectionView: UICollectionView, observedEvent: Event<Element>) {
+    public func collectionView(_ collectionView: UICollectionView, observedEvent: Event<Element>) {
         UIBindingObserver(UIElement: self) { dataSource, newSections in
             #if DEBUG
                 self._dataSourceBound = true
             #endif
             if !self.dataSet {
                 self.dataSet = true
-                dataSource.setSections(newSections)
+                dataSource.setSections(sections: newSections)
                 collectionView.reloadData()
             }
             else {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.asynchronously() {
                     let oldSections = dataSource.sectionModels
                     do {
-                        let differences = try differencesForSectionedView(oldSections, finalSections: newSections)
+                        let differences = try differencesForSectionedView(initialSections: oldSections, finalSections: newSections)
 
                         for difference in differences {
-                            dataSource.setSections(difference.finalSections)
-
-                            collectionView.performBatchUpdates(difference, animationConfiguration: self.animationConfiguration)
+                            dataSource.setSections(sections: difference.finalSections)
+                            collectionView.performBatchUpdates(changes: difference, animationConfiguration: self.animationConfiguration)
                         }
                     }
                     catch let e {
-                        rxDebugFatalError(e)
-                        self.setSections(newSections)
+                        rxDebugFatalError(error: e)
+                        self.setSections(sections: newSections)
                         collectionView.reloadData()
                     }
                 }
             }
-        }.on(observedEvent)
+        }.on(event: observedEvent)
     }
 }
