@@ -65,7 +65,7 @@ public class _TableViewSectionedDataSource
         return true
     }
     
-    public func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: IndexPath) -> Bool {
+    public func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         
         return _rx_tableView(tableView, canEditRowAtIndexPath: indexPath)
     }
