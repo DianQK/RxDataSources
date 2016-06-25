@@ -29,6 +29,6 @@ public class RxTableViewSectionedReloadDataSource<S: SectionModelType>
             #endif
             dataSource.setSections(sections: element)
             tableView.reloadData()
-        }.on(event: observedEvent)
+        }.on(observedEvent)
     }
 }

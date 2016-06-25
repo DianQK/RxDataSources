@@ -55,6 +55,6 @@ public class RxCollectionViewSectionedAnimatedDataSource<S: AnimatableSectionMod
                     }
                 }
             }
-        }.on(event: observedEvent)
+        }.on(observedEvent)
     }
 }

@@ -108,10 +108,10 @@ public class CollectionViewSectionedDataSource<S: SectionModelType>
         return self._sectionModels[indexPath.section].items[indexPath.item!]
     }
     
-    public func modelAt(indexPath: IndexPath) throws -> Any {
+    public func modelAtIndexPath(_ indexPath: IndexPath) throws -> Any {
         return itemAt(indexPath: indexPath)
     }
-    
+
     public func setSections(sections: [S]) {
         self._sectionModels = sections.map { SectionModelSnapshot(model: $0, items: $0.items) }
     }

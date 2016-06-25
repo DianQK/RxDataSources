@@ -28,7 +28,7 @@ extension UITableView {
         -> (source: O)
         -> Disposable  {
         return  { source in
-            return self.rx_itemsWithDataSource(dataSource: dataSource)(source: source)
+            return self.rx_itemsWithDataSource(dataSource)(source: source)
         }
     }
 }
@@ -48,7 +48,7 @@ extension UICollectionView {
         -> (source: O)
         -> Disposable  {
         return { source in
-            return self.rx_itemsWithDataSource(dataSource: dataSource)(source: source)
+            return self.rx_itemsWithDataSource(dataSource)(source: source)
         }
     }
 }

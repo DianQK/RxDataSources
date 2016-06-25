@@ -55,6 +55,6 @@ public class RxTableViewSectionedAnimatedDataSource<S: AnimatableSectionModelTyp
                     }
                 }
             }
-        }.on(event: observedEvent)
+        }.on(observedEvent)
     }
 }

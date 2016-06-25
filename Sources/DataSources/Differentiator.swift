@@ -496,7 +496,7 @@ struct CommandGenerator<S: AnimatableSectionModelType> {
         // inserted sections
         for (i, section) in finalSectionData.enumerated() {
             if section.moveIndex == nil {
-                finalSectionData[i].event == .inserted
+                finalSectionData[i].event = .inserted
             }
         }
         

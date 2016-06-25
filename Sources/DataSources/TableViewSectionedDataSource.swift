@@ -158,8 +158,8 @@ public class RxTableViewSectionedDataSource<S: SectionModelType>
         section.items[indexPath.item!] = item
         self._sectionModels[indexPath.section] = section
     }
-
-    public func modelAt(indexPath: IndexPath) throws -> Any {
+    
+    public func modelAtIndexPath(_ indexPath: IndexPath) throws -> Any {
         return itemAt(indexPath: indexPath)
     }
 

@@ -30,6 +30,6 @@ public class RxCollectionViewSectionedReloadDataSource<S: SectionModelType>
             #endif
             dataSource.setSections(sections: element)
             collectionView.reloadData()
-        }.on(event: observedEvent)
+        }.on(observedEvent)
     }
 }
