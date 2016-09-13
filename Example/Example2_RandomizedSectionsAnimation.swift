@@ -58,32 +58,12 @@ class ViewController: UIViewController {
             .bindTo(tableView.rx.items(dataSource: reloadDataSource))
             .addDisposableTo(disposeBag)
 
-        // Collection view logic works, but when clicking fast because of internal bugs
-        // collection view will sometimes get confused. I know what you are thinking,
-        // but this is really not a bug in the algorithm. The generated changes are
-        // pseudorandom, and crash happens depending on clicking speed.
-        //
-        // If you want, turn this to true, just click slow :)
-        //
-        // While `useAnimatedUpdateForCollectionView` is false, you can click as fast as
-        // you want, table view doesn't seem to have same issues like collection view.
+        let cvAnimatedDataSource = RxCollectionViewSectionedAnimatedDataSource<NumberSection>()
+        skinCollectionViewDataSource(cvAnimatedDataSource)
 
-        let useAnimatedUpdates = true
-        if useAnimatedUpdates {
-            let cvAnimatedDataSource = RxCollectionViewSectionedAnimatedDataSource<NumberSection>()
-            skinCollectionViewDataSource(cvAnimatedDataSource)
-
-            randomSections
-                .bindTo(animatedCollectionView.rx.items(dataSource: cvAnimatedDataSource))
-                .addDisposableTo(disposeBag)
-        }
-        else {
-            let cvReloadDataSource = RxCollectionViewSectionedReloadDataSource<NumberSection>()
-            skinCollectionViewDataSource(cvReloadDataSource)
-            randomSections
-                .bindTo(animatedCollectionView.rx.items(dataSource: cvReloadDataSource))
-                .addDisposableTo(disposeBag)
-        }
+        randomSections
+            .bindTo(animatedCollectionView.rx.items(dataSource: cvAnimatedDataSource))
+            .addDisposableTo(disposeBag)
 
         // touches
 
@@ -129,7 +109,7 @@ extension ViewController {
         dataSource.supplementaryViewFactory = { (ds ,cv, kind, ip) in
             let section = cv.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "Section", for: ip) as! NumberSectionView
 
-            section.value!.text = "\(ds.sectionAtIndex(ip.section).header)"
+            section.value!.text = "\(ds[ip.section].header)"
             
             return section
         }
@@ -141,8 +121,8 @@ extension ViewController {
         let generate = true
         if generate {
 
-            let nSections = 4
-            let nItems = 2
+            let nSections = 10
+            let nItems = 100
 
 
             /*
